@@ -117,3 +117,75 @@ self.addEventListener('notificationclick', event => {
     clients.openWindow('https://glamai.app')
   );
 });
+// Enhanced service-worker.js
+const CACHE_NAME = 'glamai-v3';
+const OFFLINE_URL = '/offline.html';
+
+// Assets to cache
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/src/css/main.css',
+  '/src/js/app.js',
+  '/src/js/core/makeup-engine.js',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/offline.html'
+];
+
+// Install event
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
+      .then(() => self.skipWaiting())
+  );
+});
+
+// Activate event
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+// Fetch event with network-first strategy
+self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return caches.match(OFFLINE_URL);
+      })
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      })
+    );
+  }
+});
+
+// Background sync for failed requests
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-photos') {
+    event.waitUntil(syncPhotos());
+  }
+});
+
+async function syncPhotos() {
+  // Sync saved photos when online
+  const unsyncedPhotos = await getUnsyncedPhotos();
+  for (const photo of unsyncedPhotos) {
+    await uploadPhoto(photo);
+  }
+}
