@@ -1,0 +1,86 @@
+{
+  "name": "GlamAI - Virtual Makeup Studio",
+  "short_name": "GlamAI",
+  "description": "AI-powered virtual makeup try-on with skin analysis and beauty recommendations",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FF4081",
+  "categories": ["beauty", "lifestyle", "photography"],
+  "icons": [
+    {
+      "src": "icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/mobile-1.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Virtual Makeup Application"
+    },
+    {
+      "src": "screenshots/mobile-2.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "AI Skin Analysis"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Makeup Look",
+      "short_name": "New Look",
+      "description": "Create a new makeup look",
+      "url": "/?new=true",
+      "icons": [{ "src": "icons/shortcut-new.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "My Gallery",
+      "short_name": "Gallery",
+      "description": "View saved makeup looks",
+      "url": "/?page=gallery",
+      "icons": [{ "src": "icons/shortcut-gallery.png", "sizes": "96x96" }]
+    }
+  ]
+}
