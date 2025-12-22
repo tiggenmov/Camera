@@ -1,103 +1,481 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GlamAI - Virtual Makeup Studio</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- MediaPipe CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
-    <!-- Font Awesome for icons -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#FF4081">
+    <meta name="description" content="GlamAI - Virtual Makeup Studio with AI-powered makeup try-on, skin analysis, and beauty recommendations">
+    <meta name="keywords" content="virtual makeup, beauty app, AI makeup, try on makeup, photo editor">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://glamai.app">
+    <meta property="og:title" content="GlamAI - Virtual Makeup Studio">
+    <meta property="og:description" content="Try makeup virtually with AI! Get personalized beauty recommendations.">
+    <meta property="og:image" content="https://glamai.app/icons/og-image.png">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://glamai.app">
+    <meta property="twitter:title" content="GlamAI - Virtual Makeup Studio">
+    <meta property="twitter:description" content="Try makeup virtually with AI! Get personalized beauty recommendations.">
+    <meta property="twitter:image" content="https://glamai.app/icons/og-image.png">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="apple-touch-startup-image" href="splash-screens/apple-launch.png">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/face-landmarks-detection@latest"></script>
+    
+    <title>GlamAI - Virtual Makeup Studio</title>
+    <link rel="stylesheet" href="src/css/main.css">
+    <link rel="stylesheet" href="src/css/components.css">
+    <link rel="stylesheet" href="src/css/animations.css">
+    <link rel="stylesheet" href="src/css/responsive.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="app-header">
-            <h1><i class="fas fa-sparkles"></i> GlamAI Makeup Studio</h1>
-            <p class="tagline">Try virtual makeup instantly</p>
-        </header>
-
-        <!-- Main App Area -->
+    <!-- Splash Screen -->
+    <div id="splashScreen" class="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">
+                <i class="fas fa-sparkles"></i>
+                <h1>GlamAI</h1>
+            </div>
+            <div class="splash-loader"></div>
+            <p class="splash-tagline">Loading your beauty studio...</p>
+        </div>
+    </div>
+    
+    <!-- Main App -->
+    <div id="app" class="app-container" style="display: none;">
+        <!-- Navigation Bar -->
+        <nav class="app-nav">
+            <div class="nav-brand">
+                <i class="fas fa-sparkles"></i>
+                <h1>GlamAI</h1>
+                <span class="nav-beta">BETA</span>
+            </div>
+            
+            <div class="nav-controls">
+                <button class="nav-btn" id="toggleDarkMode" title="Toggle Dark Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="nav-btn" id="openTutorial" title="Tutorial">
+                    <i class="fas fa-question-circle"></i>
+                </button>
+                <button class="nav-btn" id="openSettings" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Main Content -->
         <main class="app-main">
-            <!-- Left Panel: Image Display -->
-            <div class="display-panel">
-                <div class="image-container">
-                    <canvas id="outputCanvas"></canvas>
-                    <div class="placeholder" id="imagePlaceholder">
-                        <i class="fas fa-user-circle"></i>
-                        <p>Upload or capture a photo to begin</p>
+            <!-- Left Panel: Camera/Photo Display -->
+            <section class="camera-panel">
+                <div class="camera-container">
+                    <!-- Video Preview -->
+                    <div class="video-wrapper" id="videoWrapper">
+                        <video id="cameraPreview" autoplay playsinline></video>
+                        <canvas id="faceCanvas"></canvas>
+                        <canvas id="makeupCanvas"></canvas>
+                        
+                        <!-- Face Detection Overlay -->
+                        <div class="face-overlay" id="faceOverlay">
+                            <div class="face-grid"></div>
+                            <div class="face-points"></div>
+                        </div>
                     </div>
-                    <img id="sourceImage" style="display: none;">
+                    
+                    <!-- Photo Display (when not using camera) -->
+                    <div class="photo-display" id="photoDisplay">
+                        <img id="displayedPhoto" alt="Selected Photo">
+                        <div class="photo-placeholder" id="photoPlaceholder">
+                            <i class="fas fa-user-circle"></i>
+                            <p>Select or capture a photo</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Camera Controls -->
+                    <div class="camera-controls">
+                        <button class="camera-btn btn-primary" id="captureBtn">
+                            <i class="fas fa-camera"></i> Capture
+                        </button>
+                        <button class="camera-btn btn-secondary" id="switchCameraBtn">
+                            <i class="fas fa-sync-alt"></i> Switch
+                        </button>
+                        <button class="camera-btn btn-outline" id="toggleFlashBtn">
+                            <i class="fas fa-bolt"></i> Flash
+                        </button>
+                    </div>
                 </div>
                 
-                <!-- Camera Controls -->
-                <div class="camera-controls">
-                    <button id="uploadBtn" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Photo
-                    </button>
-                    <button id="cameraBtn" class="btn btn-secondary">
-                        <i class="fas fa-camera"></i> Use Camera
-                    </button>
-                    <button id="resetBtn" class="btn btn-outline">
-                        <i class="fas fa-redo"></i> Reset
+                <!-- Photo Gallery -->
+                <div class="gallery-preview">
+                    <h3>Recent Photos</h3>
+                    <div class="gallery-grid" id="galleryGrid">
+                        <!-- Gallery items will be loaded here -->
+                    </div>
+                    <button class="btn-text" id="openGalleryBtn">
+                        <i class="fas fa-images"></i> Open Gallery
                     </button>
                 </div>
-            </div>
-
-            <!-- Right Panel: Makeup Controls -->
-            <div class="controls-panel">
-                <!-- Makeup Category Tabs -->
-                <div class="category-tabs">
-                    <button class="tab-btn active" data-category="lips">
-                        <i class="fas fa-kiss-wink-heart"></i> Lips
-                    </button>
-                    <button class="tab-btn" data-category="eyes">
-                        <i class="fas fa-eye"></i> Eyes
-                    </button>
-                    <button class="tab-btn" data-category="cheeks">
-                        <i class="fas fa-circle"></i> Cheeks
-                    </button>
-                    <button class="tab-btn" data-category="foundation">
-                        <i class="fas fa-palette"></i> Foundation
-                    </button>
-                </div>
-
-                <!-- Controls will be dynamically loaded here -->
-                <div class="controls-container" id="controlsContainer">
-                    <!-- Lip controls will load here by default -->
-                </div>
-
-                <!-- Preset Makeup Looks -->
-                <div class="presets-section">
-                    <h3>Quick Looks</h3>
-                    <div class="preset-buttons">
-                        <button class="preset-btn" data-preset="natural">Natural</button>
-                        <button class="preset-btn" data-preset="glam">Glam</button>
-                        <button class="preset-btn" data-preset="bold">Bold</button>
-                        <button class="preset-btn" data-preset="party">Party</button>
+            </section>
+            
+            <!-- Center Panel: Makeup Controls -->
+            <section class="controls-panel">
+                <!-- Makeup Categories -->
+                <div class="categories-tabs">
+                    <div class="category-scroll">
+                        <button class="category-btn active" data-category="foundation">
+                            <i class="fas fa-palette"></i>
+                            <span>Foundation</span>
+                        </button>
+                        <button class="category-btn" data-category="concealer">
+                            <i class="fas fa-circle"></i>
+                            <span>Concealer</span>
+                        </button>
+                        <button class="category-btn" data-category="blush">
+                            <i class="fas fa-circle"></i>
+                            <span>Blush</span>
+                        </button>
+                        <button class="category-btn" data-category="bronzer">
+                            <i class="fas fa-sun"></i>
+                            <span>Bronzer</span>
+                        </button>
+                        <button class="category-btn" data-category="highlighter">
+                            <i class="fas fa-star"></i>
+                            <span>Highlighter</span>
+                        </button>
+                        <button class="category-btn" data-category="eyeshadow">
+                            <i class="fas fa-eye"></i>
+                            <span>Eyeshadow</span>
+                        </button>
+                        <button class="category-btn" data-category="eyeliner">
+                            <i class="fas fa-pen"></i>
+                            <span>Eyeliner</span>
+                        </button>
+                        <button class="category-btn" data-category="mascara">
+                            <i class="fas fa-eye"></i>
+                            <span>Mascara</span>
+                        </button>
+                        <button class="category-btn" data-category="brows">
+                            <i class="fas fa-pen-nib"></i>
+                            <span>Brows</span>
+                        </button>
+                        <button class="category-btn" data-category="lips">
+                            <i class="fas fa-kiss-wink-heart"></i>
+                            <span>Lips</span>
+                        </button>
+                        <button class="category-btn" data-category="lipliner">
+                            <i class="fas fa-draw-polygon"></i>
+                            <span>Lipliner</span>
+                        </button>
                     </div>
                 </div>
-
-                <!-- Download Button -->
-                <div class="action-buttons">
-                    <button id="downloadBtn" class="btn btn-success">
-                        <i class="fas fa-download"></i> Download Makeup Look
-                    </button>
+                
+                <!-- Makeup Tools -->
+                <div class="makeup-tools">
+                    <!-- Tool will be dynamically loaded based on category -->
+                    <div class="tool-content" id="toolContent">
+                        <!-- Default: Foundation Tools -->
+                        <div class="tool-section">
+                            <h4>Foundation</h4>
+                            <div class="color-picker">
+                                <div class="color-presets">
+                                    <div class="color-preset" style="background-color: #FFE4C4;" data-color="#FFE4C4"></div>
+                                    <div class="color-preset" style="background-color: #F5DEB3;" data-color="#F5DEB3"></div>
+                                    <div class="color-preset" style="background-color: #DEB887;" data-color="#DEB887"></div>
+                                    <div class="color-preset" style="background-color: #D2B48C;" data-color="#D2B48C"></div>
+                                    <div class="color-preset" style="background-color: #BC8F8F;" data-color="#BC8F8F"></div>
+                                    <div class="color-preset" style="background-color: #8B4513;" data-color="#8B4513"></div>
+                                </div>
+                                <button class="btn-small" id="customColorBtn">
+                                    <i class="fas fa-eye-dropper"></i> Custom Color
+                                </button>
+                                <input type="color" id="colorPicker" style="display: none;">
+                            </div>
+                            
+                            <div class="slider-group">
+                                <div class="slider-item">
+                                    <label>Opacity</label>
+                                    <input type="range" min="0" max="100" value="70" class="slider" id="opacitySlider">
+                                    <span class="slider-value">70%</span>
+                                </div>
+                                <div class="slider-item">
+                                    <label>Blend</label>
+                                    <input type="range" min="0" max="100" value="50" class="slider" id="blendSlider">
+                                    <span class="slider-value">50%</span>
+                                </div>
+                                <div class="slider-item">
+                                    <label>Coverage</label>
+                                    <input type="range" min="0" max="100" value="80" class="slider" id="coverageSlider">
+                                    <span class="slider-value">80%</span>
+                                </div>
+                            </div>
+                            
+                            <div class="texture-options">
+                                <h5>Texture</h5>
+                                <div class="texture-buttons">
+                                    <button class="texture-btn active" data-texture="matte">
+                                        <i class="fas fa-square"></i> Matte
+                                    </button>
+                                    <button class="texture-btn" data-texture="dewy">
+                                        <i class="fas fa-sun"></i> Dewy
+                                    </button>
+                                    <button class="texture-btn" data-texture="satin">
+                                        <i class="fas fa-circle"></i> Satin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                
+                <!-- AI Assistant -->
+                <div class="ai-assistant">
+                    <div class="ai-header">
+                        <h3><i class="fas fa-robot"></i> AI Beauty Assistant</h3>
+                        <button class="btn-small" id="analyzeFaceBtn">
+                            <i class="fas fa-magic"></i> Analyze
+                        </button>
+                    </div>
+                    <div class="ai-recommendations" id="aiRecommendations">
+                        <p class="ai-placeholder">Click "Analyze" for personalized recommendations</p>
+                    </div>
+                </div>
+                
+                <!-- Makeup Presets -->
+                <div class="presets-section">
+                    <h3>Popular Looks</h3>
+                    <div class="presets-grid">
+                        <div class="preset-card" data-preset="natural">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #FFE4C4, #F5DEB3);"></div>
+                            <span>Natural</span>
+                        </div>
+                        <div class="preset-card" data-preset="glam">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #FF4081, #9C27B0);"></div>
+                            <span>Glam</span>
+                        </div>
+                        <div class="preset-card" data-preset="party">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #FF9800, #FF5722);"></div>
+                            <span>Party</span>
+                        </div>
+                        <div class="preset-card" data-preset="bridal">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #FFF8E1, #FFECB3);"></div>
+                            <span>Bridal</span>
+                        </div>
+                        <div class="preset-card" data-preset="smokey">
+                            <div class="preset-preview" style="background: linear-gradient(135deg, #333, #666);"></div>
+                            <span>Smokey</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Right Panel: Advanced Features -->
+            <section class="features-panel">
+                <!-- Skin Analysis -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <h4><i class="fas fa-search"></i> Skin Analysis</h4>
+                        <button class="btn-icon" id="startAnalysisBtn">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                    <div class="feature-content">
+                        <div class="skin-metrics">
+                            <div class="metric">
+                                <span class="metric-label">Skin Tone</span>
+                                <div class="metric-value">-</div>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Undertone</span>
+                                <div class="metric-value">-</div>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Skin Type</span>
+                                <div class="metric-value">-</div>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Acne Score</span>
+                                <div class="metric-value">-</div>
+                            </div>
+                        </div>
+                        <div class="skin-recommendations" id="skinRecommendations">
+                            <p>Complete skin analysis to get product recommendations</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Virtual Try-On -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <h4><i class="fas fa-glasses"></i> Virtual Try-On</h4>
+                        <button class="btn-icon" id="openTryOnBtn">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="feature-content">
+                        <div class="tryon-brands">
+                            <img src="assets/brands/maybelline.png" alt="Maybelline" class="brand-logo">
+                            <img src="assets/brands/loreal.png" alt="L'Oréal" class="brand-logo">
+                            <img src="assets/brands/mac.png" alt="MAC" class="brand-logo">
+                            <img src="assets/brands/nyx.png" alt="NYX" class="brand-logo">
+                        </div>
+                        <button class="btn-full" id="browseProductsBtn">
+                            <i class="fas fa-shopping-bag"></i> Browse Products
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Before/After Comparison -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <h4><i class="fas fa-exchange-alt"></i> Comparison</h4>
+                        <button class="btn-icon" id="compareBtn">
+                            <i class="fas fa-sliders-h"></i>
+                        </button>
+                    </div>
+                    <div class="feature-content">
+                        <div class="comparison-slider" id="comparisonSlider">
+                            <div class="before-label">Before</div>
+                            <div class="after-label">After</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Social Sharing -->
+                <div class="feature-card">
+                    <div class="feature-header">
+                        <h4><i class="fas fa-share-alt"></i> Share</h4>
+                    </div>
+                    <div class="feature-content">
+                        <div class="share-buttons">
+                            <button class="share-btn instagram" data-platform="instagram">
+                                <i class="fab fa-instagram"></i>
+                            </button>
+                            <button class="share-btn tiktok" data-platform="tiktok">
+                                <i class="fab fa-tiktok"></i>
+                            </button>
+                            <button class="share-btn facebook" data-platform="facebook">
+                                <i class="fab fa-facebook"></i>
+                            </button>
+                            <button class="share-btn twitter" data-platform="twitter">
+                                <i class="fab fa-twitter"></i>
+                            </button>
+                            <button class="share-btn whatsapp" data-platform="whatsapp">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                        </div>
+                        <button class="btn-full" id="saveToGalleryBtn">
+                            <i class="fas fa-download"></i> Save to Gallery
+                        </button>
+                    </div>
+                </div>
+            </section>
         </main>
-
-        <!-- Hidden file input -->
-        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+        
+        <!-- Bottom Navigation -->
+        <footer class="app-footer">
+            <div class="footer-nav">
+                <button class="footer-btn active" data-page="home">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </button>
+                <button class="footer-btn" data-page="gallery">
+                    <i class="fas fa-images"></i>
+                    <span>Gallery</span>
+                </button>
+                <button class="footer-btn" data-page="tutorials">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Tutorials</span>
+                </button>
+                <button class="footer-btn" data-page="shop">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span>Shop</span>
+                </button>
+                <button class="footer-btn" data-page="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </button>
+            </div>
+        </footer>
+        
+        <!-- Modals -->
+        <div id="cameraModal" class="modal">
+            <!-- Camera modal content -->
+        </div>
+        
+        <div id="galleryModal" class="modal">
+            <!-- Gallery modal content -->
+        </div>
+        
+        <div id="tutorialModal" class="modal">
+            <!-- Tutorial modal content -->
+        </div>
+        
+        <div id="settingsModal" class="modal">
+            <!-- Settings modal content -->
+        </div>
+        
+        <div id="tryOnModal" class="modal">
+            <!-- Try-on modal content -->
+        </div>
+        
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+        
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p id="loadingMessage">Processing...</p>
+        </div>
     </div>
 
     <!-- JavaScript Files -->
-    <script src="makeup-engine.js"></script>
-    <script src="ui-controls.js"></script>
-    <script src="app.js"></script>
+    <script src="src/js/utils/helpers.js"></script>
+    <script src="src/js/utils/storage.js"></script>
+    <script src="src/js/utils/api.js"></script>
+    
+    <script src="src/js/core/face-detector.js"></script>
+    <script src="src/js/core/makeup-engine.js"></script>
+    <script src="src/js/core/ai-processor.js"></script>
+    
+    <script src="src/js/features/ai-suggestions.js"></script>
+    <script src="src/js/features/makeup-history.js"></script>
+    <script src="src/js/features/skin-analysis.js"></script>
+    <script src="src/js/features/virtual-tryon.js"></script>
+    <script src="src/js/features/social-share.js"></script>
+    <script src="src/js/features/3d-effects.js"></script>
+    
+    <script src="src/js/components/camera.js"></script>
+    <script src="src/js/components/gallery.js"></script>
+    <script src="src/js/components/tutorials.js"></script>
+    <script src="src/js/components/store.js"></script>
+    
+    <script src="src/js/app.js"></script>
+    
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js');
+        }
+    </script>
 </body>
 </html>
