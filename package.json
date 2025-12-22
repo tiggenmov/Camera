@@ -1,0 +1,52 @@
+{
+  "name": "glamai-makeup-studio",
+  "version": "1.0.0",
+  "description": "AI-powered virtual makeup try-on app for Android",
+  "main": "src/js/app.js",
+  "scripts": {
+    "start": "http-server public -p 3000",
+    "build": "node build.js",
+    "build:web": "node build.js web",
+    "build:android": "node build.js android",
+    "test": "jest",
+    "lint": "eslint src/js",
+    "deploy": "npm run build && firebase deploy",
+    "generate-icons": "node scripts/generate-icons.js",
+    "optimize-images": "node scripts/optimize-images.js"
+  },
+  "dependencies": {
+    "@mediapipe/face_mesh": "^0.4.0",
+    "@tensorflow/tfjs": "^4.0.0",
+    "@tensorflow-models/face-landmarks-detection": "^1.0.0"
+  },
+  "devDependencies": {
+    "cordova": "^11.0.0",
+    "cordova-android": "^10.0.0",
+    "cordova-ios": "^6.0.0",
+    "eslint": "^8.0.0",
+    "fs-extra": "^11.0.0",
+    "http-server": "^14.0.0",
+    "jest": "^29.0.0",
+    "sharp": "^0.32.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0"
+  },
+  "keywords": [
+    "makeup",
+    "virtual",
+    "ai",
+    "beauty",
+    "android",
+    "pwa"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/glamai-makeup-studio"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/glamai-makeup-studio/issues"
+  },
+  "homepage": "https://glamai.app"
+}
