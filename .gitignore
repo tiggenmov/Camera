@@ -1,0 +1,8 @@
+cat > .gitignore << 'EOF'
+node_modules/
+dist/
+public/icons/
+public/assets/
+.env
+.DS_Store
+EOF
